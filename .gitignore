@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+node_modules/
+animal_captures/*
+!animal_captures/.gitkeep
+datasets/images/
+datasets/labels/
+runs/
+models/*.pt

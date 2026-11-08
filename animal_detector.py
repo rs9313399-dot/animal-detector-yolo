@@ -9,6 +9,8 @@ import time
 import datetime
 import os
 import threading
+import argparse
+from pathlib import Path
 from ultralytics import YOLO
 
 # ─── CONFIG ───────────────────────────────────────────────────────────────────
@@ -37,21 +39,24 @@ ANIMAL_CLASSES = {
 # MODULE 1 — Setup
 # ──────────────────────────────────────────────────────────────────────────────
 
-def setup():
+def setup(model_path=Path(__file__).resolve().parent / "yolov8n.pt", camera_index=CAMERA_INDEX):
     os.makedirs(SAVE_DIR, exist_ok=True)
     print("[SETUP] Save directory ready!")
 
     print("[SETUP] YOLOv8 model load ho raha hai... (pehli baar thoda time lagega)")
-    model = YOLO("yolov8n.pt")   # 'n' = nano, fastest model
+    if not Path(model_path).is_file():
+        raise FileNotFoundError(f"YOLO weights not found locally: {model_path}")
+    model = YOLO(str(model_path))
     print("[SETUP] Model ready!")
 
-    cap = cv2.VideoCapture(CAMERA_INDEX)
+    cap = cv2.VideoCapture(camera_index)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
     if not cap.isOpened():
+        cap.release()
         print("[ERROR] Camera nahi khul raha!")
-        exit(1)
+        raise RuntimeError("Could not open webcam; check the camera index and permissions.")
 
     print(f"[SETUP] Camera ready!")
     return model, cap
@@ -75,7 +80,7 @@ def play_beep():
 # MODULE 3 — Draw Box
 # ──────────────────────────────────────────────────────────────────────────────
 
-def draw_animal_box(frame, x1, y1, x2, y2, name, conf, color):
+def draw_animal_box(frame, x1, y1, x2, y2, name, conf, color, track_id=None):
     # Main rectangle
     cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
 
@@ -92,7 +97,7 @@ def draw_animal_box(frame, x1, y1, x2, y2, name, conf, color):
     cv2.line(frame, (x2,y2), (x2,y2-cl), color, t)
 
     # Label
-    label  = f"{name}  {int(conf*100)}%"
+    label  = f"{name}{f' #{track_id}' if track_id is not None else ''}  {int(conf*100)}%"
     lbl_y  = y1 - 10 if y1 > 20 else y1 + 20
     (lw, lh), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 1)
     cv2.rectangle(frame, (x1, lbl_y-lh-4), (x1+lw+8, lbl_y+2), color, -1)
@@ -136,24 +141,27 @@ def save_capture(frame, count, animal_name="animal"):
 # MODULE 6 — Main Loop
 # ──────────────────────────────────────────────────────────────────────────────
 
-def run():
+def run(track_enabled=False, image_size=640, camera_index=CAMERA_INDEX, model_path=Path(__file__).resolve().parent / "yolov8n.pt"):
     print("="*54)
     print("   🐾  Animal Detector — YOLOv8  🐾")
     print("="*54)
     print("[INFO] Q=Quit | S=Manual Save")
     print("="*54)
 
-    setup()
-    model, cap = setup()
+    model, cap = setup(model_path, camera_index)
+    import torch
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
     last_save      = 0
     capture_count  = 0
     was_detected   = False
     prev_time      = time.time()
 
-    while True:
+    try:
+      while True:
         ret, frame = cap.read()
-        if not ret:
+        if not ret or frame is None or frame.size == 0:
+            print("[WARN] Camera returned an empty frame; stopping capture loop.")
             break
 
         frame     = cv2.flip(frame, 1)
@@ -163,7 +171,12 @@ def run():
         prev_time = now
 
         # ── YOLO Detection ────────────────────────────────────────────────
-        results = model(frame, verbose=False)[0]
+        predict = model.track if track_enabled else model.predict
+        options = {"verbose": False, "conf": min(CONFIDENCE_MIN, 0.1) if track_enabled else CONFIDENCE_MIN,
+                   "iou": 0.55, "imgsz": image_size, "classes": sorted(ANIMAL_CLASSES), "device": device}
+        if track_enabled:
+            options.update(persist=True, tracker="bytetrack.yaml")
+        results = predict(frame, **options)[0]
 
         found_animals   = []
         last_animal     = "animal"
@@ -180,7 +193,8 @@ def run():
             animal_name, color = ANIMAL_CLASSES[cls_id]
             x1,y1,x2,y2 = map(int, box.xyxy[0])
 
-            draw_animal_box(frame, x1, y1, x2, y2, animal_name, conf, color)
+            track_id = int(box.id[0]) if track_enabled and box.id is not None else None
+            draw_animal_box(frame, x1, y1, x2, y2, animal_name, conf, color, track_id)
             found_animals.append(animal_name)
             last_animal = animal_name.lower()
 
@@ -218,11 +232,18 @@ def run():
         elif key == ord('s'):
             capture_count = save_capture(frame, capture_count)
 
-    cap.release()
-    cv2.destroyAllWindows()
+    finally:
+      cap.release()
+      cv2.destroyAllWindows()
     print(f"\n[DONE] Total captures: {capture_count}")
     print(f"[DONE] Saved in: ./{SAVE_DIR}/")
 
 
 if __name__ == "__main__":
-    run()
+    parser = argparse.ArgumentParser(description="Local YOLOv8 animal detector")
+    parser.add_argument("--track", action="store_true", help="enable persistent ByteTrack IDs")
+    parser.add_argument("--imgsz", type=int, default=640, help="inference image size")
+    parser.add_argument("--camera", type=int, default=CAMERA_INDEX, help="OpenCV webcam index")
+    parser.add_argument("--model", type=Path, default=Path(__file__).resolve().parent / "yolov8n.pt")
+    args = parser.parse_args()
+    run(args.track, args.imgsz, args.camera, args.model)

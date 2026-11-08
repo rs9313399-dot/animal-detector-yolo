@@ -1,0 +1,135 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   FAUNA — Wildlife Intelligence System Design Tokens
+   Bold Minimalism + Premium Editorial UI
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Surface Architecture */
+  --bg-canvas: #090B0D;
+  --bg-surface: #111519;
+  --bg-surface-elevated: #161C22;
+  --bg-surface-subtle: #1D242B;
+  --bg-surface-hover: #232B34;
+  --bg-glass: rgba(17, 21, 25, 0.75);
+
+  /* Typography Palette */
+  --text-primary: #F5F3EF;
+  --text-secondary: #9AA1A8;
+  --text-muted: #5F666D;
+  --text-faint: #3A4148;
+  --text-inverse: #090B0D;
+
+  /* Border Tokens */
+  --border-hairline: rgba(255, 255, 255, 0.05);
+  --border-subtle: rgba(255, 255, 255, 0.09);
+  --border-medium: rgba(255, 255, 255, 0.16);
+  --border-strong: rgba(255, 255, 255, 0.28);
+  --border-accent: rgba(56, 123, 92, 0.4);
+
+  /* Color Accents */
+  --accent-forest: #2E604A;
+  --accent-forest-bright: #387B5C;
+  --accent-forest-light: #4BA27A;
+  --accent-forest-tint: rgba(56, 123, 92, 0.12);
+  --accent-forest-glow: rgba(56, 123, 92, 0.28);
+
+  --accent-amber: #D49544;
+  --accent-amber-tint: rgba(212, 149, 68, 0.12);
+  
+  --accent-crimson: #D25858;
+  --accent-crimson-tint: rgba(210, 88, 88, 0.12);
+
+  --accent-cyan: #38A3A5;
+  --accent-cyan-tint: rgba(56, 163, 165, 0.12);
+
+  /* Fonts */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Newsreader', 'Playfair Display', Georgia, serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+
+  /* Transitions */
+  --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
+  --transition-fast: 150ms var(--ease-out-quint);
+  --transition-normal: 240ms var(--ease-out-quint);
+  --transition-slow: 380ms var(--ease-out-quint);
+
+  /* Geometry */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-pill: 9999px;
+
+  /* Layout */
+  --sidebar-width: 260px;
+  --header-height: 64px;
+}
+
+/* Base Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  background-color: var(--bg-canvas);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-canvas);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: var(--radius-xs);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-medium);
+}
+
+/* Selection */
+::selection {
+  background: var(--accent-forest);
+  color: var(--text-primary);
+}
+
+/* Button Reset */
+button {
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* Input Reset */
+input, select, textarea {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  outline: none;
+}
