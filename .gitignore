@@ -9,3 +9,4 @@ datasets/images/
 datasets/labels/
 runs/
 models/*.pt
+animal-detector-yolo-main/
